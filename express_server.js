@@ -27,24 +27,29 @@ app.get ("/hello", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase };
-  res.render("urls_index", templateVars); // urls_index.ejs
+  const templateVars = {
+    username: req.cookies["username"],
+    urls: urlDatabase
+  };
+  res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
-});
-
-app.get("/u/:id", (req, res) => {
-  const longURL = urlDatabase[req.params.id];
-  res.redirect(longURL);
+  const templateVars = {
+    username: req.cookies["username"]
+  };
+  res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:id", (req, res) => {
   let id = req.params.id;
   let longURL = urlDatabase[id];
   if (longURL) {
-    let templateVars = { id: id, longURL: longURL };
+    let templateVars = { 
+      id: id, 
+      longURL: longURL,
+      username: req.cookies["username"]
+    };
     res.render("urls_show", templateVars);
   } else {
     res.status(404).send('URL not found');
@@ -66,6 +71,8 @@ app.post("/login", (req, res) => {
   res.cookie("username", username);
   res.redirect("/urls");
 });
+
+
 
 function generateRandomString() {
   let randomString = Math.random().toString(36).substring(2,8);

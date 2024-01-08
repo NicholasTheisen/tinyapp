@@ -22,6 +22,13 @@
         <input type="text" id="username" name="username">
         <button type="submit">Login</button>
       </form>
+      <span class="navbar-text">
+        <% if (username) { %>
+          Logged in as <%= username %>
+        <% } else { %>
+          Not logged in
+        <% } %>
+      </span>
     </div>
   </nav>
 </header>
