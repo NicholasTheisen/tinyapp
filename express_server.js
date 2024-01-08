@@ -29,3 +29,10 @@ app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars); // urls_index.ejs
 });
+
+app.get("/urls/:id", (req, res) => {
+  let id = req.params.id;
+  let longURL = urlDatabase[id];
+  let templateVars = { id: id, longURL: longURL };
+  res.render("urls_show", templateVars);
+});
