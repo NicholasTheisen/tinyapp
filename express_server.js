@@ -56,6 +56,11 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls");
 });
 
+app.post("/urls/:id", (req, res) => {
+  urlDatabase[req.params.id] = req.body.longURL;
+  res.redirect("/urls");
+});
+
 function generateRandomString() {
   let randomString = Math.random().toString(36).substring(2,8);
   return randomString;
