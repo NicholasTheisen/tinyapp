@@ -61,6 +61,12 @@ app.post("/urls/:id", (req, res) => {
   res.redirect("/urls");
 });
 
+app.post("/login", (req, res) => {
+  const username = req.body.username;
+  res.cookie("username", username);
+  res.redirect("/urls");
+});
+
 function generateRandomString() {
   let randomString = Math.random().toString(36).substring(2,8);
   return randomString;
