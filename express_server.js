@@ -51,6 +51,11 @@ app.get("/urls/:id", (req, res) => {
   }
 });
 
+app.post("/urls/:id/delete", (req, res) => {
+  delete urlDatabase[req.params.id];
+  res.redirect("/urls");
+});
+
 function generateRandomString() {
   let randomString = Math.random().toString(36).substring(2,8);
   return randomString;
