@@ -96,10 +96,21 @@ const users = {
 };
 
 app.post("/register", (req, res) => {
-  const userId = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
 
+  if (!email || !password) {
+    res.status(400).send("Email and password cannot be empty");
+    return;
+  }
+
+  const user = getUserByEmail(email, users);
+  if (user) {
+    res.status(400).send("Email is already registered");
+    return;
+  }
+
+  const userId = generateRandomString();
   users[userId] = {
     id: userId,
     email: email,
@@ -109,6 +120,16 @@ app.post("/register", (req, res) => {
   res.cookie("user_id", userId);
   res.redirect("/urls");
 });
+
+function getUserByEmail(email, users) {
+  for (let userId in users) {
+    if (users[userId].email === email) {
+      return users[userId];
+    }
+  }
+  return null;
+}
+
 
 
 
