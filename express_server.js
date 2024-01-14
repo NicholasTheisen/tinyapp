@@ -30,6 +30,7 @@ app.get("/urls", (req, res) => {
   const templateVars = {
     username: req.cookies["username"],
     urls: urlDatabase
+    user: users[req.cookies["user_id"]
   };
   res.render("urls_index", templateVars);
 });
@@ -76,6 +77,60 @@ app.post("/logout", (req, res) => {
   res.clearCookie("username");
   res.redirect("/urls");
 });
+
+app.get("/register", (req, res) => {
+  res.render("register");
+});
+
+const users = {
+  "userRandomID": {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+  },
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk",
+  },
+};
+
+app.post("/register", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+
+  if (!email || !password) {
+    res.status(400).send("Email and password cannot be empty");
+    return;
+  }
+
+  const user = getUserByEmail(email, users);
+  if (user) {
+    res.status(400).send("Email is already registered");
+    return;
+  }
+
+  const userId = generateRandomString();
+  users[userId] = {
+    id: userId,
+    email: email,
+    password: password,
+  };
+
+  res.cookie("user_id", userId);
+  res.redirect("/urls");
+});
+
+function getUserByEmail(email, users) {
+  for (let userId in users) {
+    if (users[userId].email === email) {
+      return users[userId];
+    }
+  }
+  return null;
+}
+
+
 
 
 
