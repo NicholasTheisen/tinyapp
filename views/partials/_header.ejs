@@ -19,7 +19,7 @@
       </div>
       <% if (username) { %>
         <span class="navbar-text">
-          Logged in as <%= username %>
+          Logged in as <%= user ? user.email : '' %>
         </span>
         <form method="POST" action="/logout">
           <button type="submit">Logout</button>

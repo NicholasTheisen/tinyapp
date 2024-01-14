@@ -30,6 +30,7 @@ app.get("/urls", (req, res) => {
   const templateVars = {
     username: req.cookies["username"],
     urls: urlDatabase
+    user: users[req.cookies["user_id"]
   };
   res.render("urls_index", templateVars);
 });
@@ -80,6 +81,36 @@ app.post("/logout", (req, res) => {
 app.get("/register", (req, res) => {
   res.render("register");
 });
+
+const users = {
+  "userRandomID": {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+  },
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk",
+  },
+};
+
+app.post("/register", (req, res) => {
+  const userId = generateRandomString();
+  const email = req.body.email;
+  const password = req.body.password;
+
+  users[userId] = {
+    id: userId,
+    email: email,
+    password: password,
+  };
+
+  res.cookie("user_id", userId);
+  res.redirect("/urls");
+});
+
+
 
 
 function generateRandomString() {
