@@ -1,6 +1,7 @@
 const express = require("express");
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
+const { getUserByEmail } = require('./helpers');
 const app = express();
 const PORT = 8080; // default port 8080
 
@@ -148,7 +149,16 @@ app.post("/register", (req, res) => {
 
 app.post("/login", (req, res) => {
   const email = req.body.email;
-  const password = req.body.password; 
+  const password = req.body.password;
+  const user = getUserByEmail(email, users);
+  
+  if user && bcrypt.compareSync(password, user.password) {
+    res.session("user_id", user.id);
+    res.redirect("/urls");
+  } else {
+    res.status(403).send("Email or password is incorrect");
+  }
+}); 
 
   // Find the user by email
   let userId;
