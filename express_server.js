@@ -68,14 +68,27 @@ app.post("/urls/:id", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  const username = req.body.username;
-  res.cookie("username", username);
+  const email = req.body.email;
+  const password = req.body.password;
+
+  const user = getUserByEmail(email, users);
+  if (!user) {
+    res.status(403).send("User with that email cannot be found");
+    return;
+  }
+
+  if (user.password !== password) {
+    res.status(403).send("Password does not match");
+    return;
+  }
+
+  res.cookie("user_id", user.id);
   res.redirect("/urls");
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("username");
-  res.redirect("/urls");
+  res.clearCookie("user_id");
+  res.redirect("/login");
 });
 
 app.get("/register", (req, res) => {
