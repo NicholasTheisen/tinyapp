@@ -1,5 +1,6 @@
 const express = require("express");
 const cookieParser = require('cookie-parser');
+const bcrypt = require('bcryptjs');
 const app = express();
 const PORT = 8080; // default port 8080
 
@@ -107,4 +108,61 @@ app.post("/urls/:id/delete", (req, res) => {
   }
   delete urlDatabase[shortURL];
   res.redirect("/urls");
+});
+
+let users = {}; // This should be at the top of your file
+
+app.post("/register", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password; 
+  const hashedPassword = bcrypt.hashSync(password, 10); 
+
+  // Check if email is already in use
+  for (let userId in users) {
+    if (users[userId].email === email) {
+      res.status(400).send('Email already in use');
+      return;
+    }
+  }
+
+  // Create a new user and store it in the users database
+  const userId = generateRandomString(); // You need to implement this function
+  users[userId] = {
+    id: userId,
+    email: email,
+    password: hashedPassword
+  };
+
+  // Set the user_id cookie
+  res.cookie("user_id", userId);
+  res.redirect("/urls");
+});
+
+app.post("/login", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password; 
+
+  // Find the user by email
+  let userId;
+  for (let id in users) {
+    if (users[id].email === email) {
+      userId = id;
+      break;
+    }
+  }
+
+  // If the user was not found, send a 403 error
+  if (!userId) {
+    res.status(403).send('Email not found');
+    return;
+  }
+
+  const hashedPassword = users[userId].password;
+
+  if (bcrypt.compareSync(password, hashedPassword)) {
+    res.cookie("user_id", userId);
+    res.redirect("/urls");
+  } else {
+    res.status(403).send("Incorrect password");
+  }
 });
