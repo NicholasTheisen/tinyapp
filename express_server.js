@@ -1,14 +1,39 @@
 const express = require("express");
+const cookieSession = require('cookie-session');
+const bcrypt = require('bcryptjs');
+const { getUserByEmail } = require('./helpers');
 const app = express();
 const PORT = 8080; // default port 8080
 
+let users = {};
+
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2']
+}));
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
 };
+
+function urlsForUser(id) {
+  let urls = {};
+  for (let url in urlDatabase) {
+    if (urlDatabase[url].userID === id) {
+      urls[url] = urlDatabase[url];
+    }
+  }
+  return urls;
+} 
 
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -27,117 +52,135 @@ app.get ("/hello", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
+  const userId = req.session["user_id"];
+  if (!userId) {
+    res.send("Please login or register first.");
+    return;
+  }
+  const urls = urlsForUser(userId);
   const templateVars = {
-    username: req.cookies["username"],
-    urls: urlDatabase
-    user: users req.cookies["user_id"]
+    urls,
+    user: users[userId]
   };
-  res.render("urls_index", templateVars);
+  res.render("urls_index", { urls });
 });
 
 app.get("/urls/new", (req, res) => {
-  const templateVars = {
-    username: req.cookies["username"]
-  };
-  res.render("urls_new", templateVars);
-});
-
-app.get("/urls/:id", (req, res) => {
-  let id = req.params.id;
-  let longURL = urlDatabase[id];
-  if (longURL) {
-    let templateVars = { 
-      id: id, 
-      longURL: longURL,
-      username: req.cookies["username"]
-    };
-    res.render("urls_show", templateVars);
+  if (!req.session["user_id"]) {
+    res.redirect("/login");
   } else {
-    res.status(404).send('URL not found');
+    const templateVars = {
+      user: users[req.session["user_id"]]
+    };
+    res.render("urls_new", templateVars);
   }
 });
 
-app.post("/urls/:id/delete", (req, res) => {
-  delete urlDatabase[req.params.id];
-  res.redirect("/urls");
+app.get("/urls/:id", (req, res) => {
+  const userId = req.session["user_id"];
+  const shortURL = req.params.id;
+  if (!userId) {
+    res.send("Please login first.");
+    return;
+  }
+  if (urlDatabase[shortURL].userID !== userId) {
+    res.send("This URL does not belong to you.");
+    return;
+  }
+  res.render("urls_show", { shortURL, longURL: urlDatabase[shortURL].longURL });
 });
 
 app.post("/urls/:id", (req, res) => {
-  urlDatabase[req.params.id] = req.body.longURL;
+  const userId = req.session["user_id"];
+  const shortURL = req.params.id;
+  if (!userId) {
+    res.send("Please login first.");
+    return;
+  }
+  if (urlDatabase[shortURL].userID !== userId) {
+    res.send("This URL does not belong to you.");
+    return;
+  }
+  urlDatabase[shortURL].longURL = req.body.longURL;
+  res.redirect("/urls");
+});
+
+app.post("/urls/:id/delete", (req, res) => {
+  const userId = req.session["user_id"];
+  const shortURL = req.params.id;
+  if (!userId) {
+    res.send("Please login first.");
+    return;
+  }
+  if (urlDatabase[shortURL].userID !== userId) {
+    res.send("This URL does not belong to you.");
+    return;
+  }
+  delete urlDatabase[shortURL];
+  res.redirect("/urls");
+});
+
+
+app.post("/register", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password; 
+  const hashedPassword = bcrypt.hashSync(password, 10); 
+
+  // Check if email is already in use
+  for (let userId in users) {
+    if (users[userId].email === email) {
+      res.status(400).send('Email already in use');
+      return;
+    }
+  }
+
+  // Create a new user and store it in the users database
+  const userId = generateRandomString(); // You need to implement this function
+  users[userId] = {
+    id: userId,
+    email: email,
+    password: hashedPassword
+  };
+
+  // Set the user_id cookie
+  res.session("user_id", userId);
   res.redirect("/urls");
 });
 
 app.post("/login", (req, res) => {
-  const username = req.body.username;
-  res.cookie("username", username);
-  res.redirect("/urls");
-});
-
-app.post("/logout", (req, res) => {
-  res.clearCookie("username");
-  res.redirect("/urls");
-});
-
-app.get("/register", (req, res) => {
-  res.render("register");
-});
-
-const users = {
-  "userRandomID": {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "purple-monkey-dinosaur",
-  },
-  "user2RandomID": {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "dishwasher-funk",
-  },
-};
-
-app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-
-  if (!email || !password) {
-    res.status(400).send("Email and password cannot be empty");
-    return;
-  }
-
   const user = getUserByEmail(email, users);
-  if (user) {
-    res.status(400).send("Email is already registered");
-    return;
+  
+  if user && bcrypt.compareSync(password, user.password) {
+    res.session("user_id", user.id);
+    res.redirect("/urls");
+  } else {
+    res.status(403).send("Email or password is incorrect");
   }
+}); 
 
-  const userId = generateRandomString();
-  users[userId] = {
-    id: userId,
-    email: email,
-    password: password,
-  };
-
-  res.cookie("user_id", userId);
-  res.redirect("/urls");
-});
-
-function getUserByEmail(email, users) {
-  for (let userId in users) {
-    if (users[userId].email === email) {
-      return users[userId];
+  // Find the user by email
+  let userId;
+  for (let id in users) {
+    if (users[id].email === email) {
+      userId = id;
+      break;
     }
   }
-  return null;
-}
 
-app.get("/login", (req, res) => {
-  res.render("login");
+  // If the user was not found, send a 403 error
+  if (!userId) {
+    res.status(403).send('Email not found');
+    return;
+  }
+
+  const hashedPassword = users[userId].password;
+
+  if (bcrypt.compareSync(password, hashedPassword)) {
+    res.session("user_id", userId);
+    res.redirect("/urls");
+  } else {
+    res.status(403).send("Incorrect password");
+  }
 });
-
-
-
-function generateRandomString() {
-  let randomString = Math.random().toString(36).substring(2,8);
-  return randomString;
-};
-
