@@ -28,18 +28,21 @@ app.get ("/hello", (req, res) => {
 
 app.get("/urls", (req, res) => {
   const templateVars = {
-    username: req.cookies["username"],
+    user: users[req.cookies["user_id"]],
     urls: urlDatabase
-    user: users req.cookies["user_id"]
   };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  const templateVars = {
-    username: req.cookies["username"]
-  };
-  res.render("urls_new", templateVars);
+  if (!req.cookies["user_id"]) {
+    res.redirect("/login");
+  } else {
+    const templateVars = {
+      user: users[req.cookies["user_id"]]
+    };
+    res.render("urls_new", templateVars);
+  }
 });
 
 app.get("/urls/:id", (req, res) => {
@@ -49,7 +52,7 @@ app.get("/urls/:id", (req, res) => {
     let templateVars = { 
       id: id, 
       longURL: longURL,
-      username: req.cookies["username"]
+      user: users[req.cookies["user_id"]]
     };
     res.render("urls_show", templateVars);
   } else {
@@ -58,13 +61,21 @@ app.get("/urls/:id", (req, res) => {
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  delete urlDatabase[req.params.id];
-  res.redirect("/urls");
+  if (req.cookies["user_id"]) {
+    delete urlDatabase[req.params.id];
+    res.redirect("/urls");
+  } else {
+    res.status(403).send("You must be logged in to delete URLs.");
+  }
 });
 
 app.post("/urls/:id", (req, res) => {
-  urlDatabase[req.params.id] = req.body.longURL;
-  res.redirect("/urls");
+  if (req.cookies["user_id"]) {
+    urlDatabase[req.params.id] = req.body.longURL;
+    res.redirect("/urls");
+  } else {
+    res.status(403).send("You must be logged in to update URLs.");
+  }
 });
 
 app.post("/login", (req, res) => {
@@ -92,7 +103,11 @@ app.post("/logout", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  res.render("register");
+  if (req.cookies["user_id"]) {
+    res.redirect("/urls");
+  } else {
+    res.render("register");
+  }
 });
 
 const users = {
@@ -144,7 +159,11 @@ function getUserByEmail(email, users) {
 }
 
 app.get("/login", (req, res) => {
-  res.render("login");
+  if (req.cookies["user_id"]) {
+    res.redirect("/urls");
+  } else {
+    res.render("login");
+  }
 });
 
 
