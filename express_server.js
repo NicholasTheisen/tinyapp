@@ -8,7 +8,10 @@ let users = {};
 
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2']
+}));
 
 const urlDatabase = {
   b6UTxQ: {
@@ -48,7 +51,7 @@ app.get ("/hello", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const userId = req.cookies["user_id"];
+  const userId = req.session["user_id"];
   if (!userId) {
     res.send("Please login or register first.");
     return;
@@ -62,18 +65,18 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  if (!req.cookies["user_id"]) {
+  if (!req.session["user_id"]) {
     res.redirect("/login");
   } else {
     const templateVars = {
-      user: users[req.cookies["user_id"]]
+      user: users[req.session["user_id"]]
     };
     res.render("urls_new", templateVars);
   }
 });
 
 app.get("/urls/:id", (req, res) => {
-  const userId = req.cookies["user_id"];
+  const userId = req.session["user_id"];
   const shortURL = req.params.id;
   if (!userId) {
     res.send("Please login first.");
@@ -87,7 +90,7 @@ app.get("/urls/:id", (req, res) => {
 });
 
 app.post("/urls/:id", (req, res) => {
-  const userId = req.cookies["user_id"];
+  const userId = req.session["user_id"];
   const shortURL = req.params.id;
   if (!userId) {
     res.send("Please login first.");
@@ -102,7 +105,7 @@ app.post("/urls/:id", (req, res) => {
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  const userId = req.cookies["user_id"];
+  const userId = req.session["user_id"];
   const shortURL = req.params.id;
   if (!userId) {
     res.send("Please login first.");
@@ -139,7 +142,7 @@ app.post("/register", (req, res) => {
   };
 
   // Set the user_id cookie
-  res.cookie("user_id", userId);
+  res.session("user_id", userId);
   res.redirect("/urls");
 });
 
@@ -165,7 +168,7 @@ app.post("/login", (req, res) => {
   const hashedPassword = users[userId].password;
 
   if (bcrypt.compareSync(password, hashedPassword)) {
-    res.cookie("user_id", userId);
+    res.session("user_id", userId);
     res.redirect("/urls");
   } else {
     res.status(403).send("Incorrect password");
