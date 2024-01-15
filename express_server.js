@@ -1,8 +1,10 @@
 const express = require("express");
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
 const app = express();
 const PORT = 8080; // default port 8080
+
+let users = {};
 
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
@@ -21,13 +23,13 @@ const urlDatabase = {
 
 function urlsForUser(id) {
   let urls = {};
-  for(let url in urlDatabase) {
-    if(urlDatabase[url].userID === id) {
+  for (let url in urlDatabase) {
+    if (urlDatabase[url].userID === id) {
       urls[url] = urlDatabase[url];
     }
   }
   return urls;
-}
+} 
 
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -52,6 +54,10 @@ app.get("/urls", (req, res) => {
     return;
   }
   const urls = urlsForUser(userId);
+  const templateVars = {
+    urls,
+    user: users[userId]
+  };
   res.render("urls_index", { urls });
 });
 
@@ -110,7 +116,6 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls");
 });
 
-let users = {}; // This should be at the top of your file
 
 app.post("/register", (req, res) => {
   const email = req.body.email;
