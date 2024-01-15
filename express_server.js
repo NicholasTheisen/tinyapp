@@ -30,7 +30,7 @@ app.get("/urls", (req, res) => {
   const templateVars = {
     username: req.cookies["username"],
     urls: urlDatabase
-    user: users[req.cookies["user_id"]
+    user: users req.cookies["user_id"]
   };
   res.render("urls_index", templateVars);
 });
@@ -130,7 +130,9 @@ function getUserByEmail(email, users) {
   return null;
 }
 
-
+app.get("/login", (req, res) => {
+  res.render("login");
+});
 
 
 
