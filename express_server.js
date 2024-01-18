@@ -1,20 +1,12 @@
 const express = require("express");
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
-const { getUserByEmail } = require('./helpers');
+const { getUserByEmail, generateRandomString } = require('./helpers');
 const app = express();
-const PORT = 8080; // default port 8080
+const PORT = 8080;
 
 let users = {};
-
-app.set("view engine", "ejs");
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieSession({
-  name: 'session',
-  keys: ['key1', 'key2']
-}));
-
-const urlDatabase = {
+let urlDatabase = {
   b6UTxQ: {
     longURL: "https://www.tsn.ca",
     userID: "aJ48lW",
@@ -24,6 +16,13 @@ const urlDatabase = {
     userID: "aJ48lW",
   },
 };
+
+app.set("view engine", "ejs");
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2']
+}));
 
 function urlsForUser(id) {
   let urls = {};
@@ -39,20 +38,16 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
-});
-
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-app.get ("/hello", (req, res) => {
+app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
 app.get("/urls", (req, res) => {
-  const userId = req.session["user_id"];
+  const userId = req.session.user_id;
   if (!userId) {
     res.send("Please login or register first.");
     return;
@@ -62,22 +57,22 @@ app.get("/urls", (req, res) => {
     urls,
     user: users[userId]
   };
-  res.render("urls_index", { urls });
+  res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  if (!req.session["user_id"]) {
+  if (!req.session.user_id) {
     res.redirect("/login");
   } else {
     const templateVars = {
-      user: users[req.session["user_id"]]
+      user: users[req.session.user_id]
     };
     res.render("urls_new", templateVars);
   }
 });
 
 app.get("/urls/:id", (req, res) => {
-  const userId = req.session["user_id"];
+  const userId = req.session.user_id;
   const shortURL = req.params.id;
   if (!userId) {
     res.send("Please login first.");
@@ -91,7 +86,7 @@ app.get("/urls/:id", (req, res) => {
 });
 
 app.post("/urls/:id", (req, res) => {
-  const userId = req.session["user_id"];
+  const userId = req.session.user_id;
   const shortURL = req.params.id;
   if (!userId) {
     res.send("Please login first.");
@@ -106,7 +101,7 @@ app.post("/urls/:id", (req, res) => {
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  const userId = req.session["user_id"];
+  const userId = req.session.user_id;
   const shortURL = req.params.id;
   if (!userId) {
     res.send("Please login first.");
@@ -119,7 +114,6 @@ app.post("/urls/:id/delete", (req, res) => {
   delete urlDatabase[shortURL];
   res.redirect("/urls");
 });
-
 
 app.post("/register", (req, res) => {
   const email = req.body.email;
@@ -135,7 +129,7 @@ app.post("/register", (req, res) => {
   }
 
   // Create a new user and store it in the users database
-  const userId = generateRandomString(); // You need to implement this function
+  const userId = generateRandomString();
   users[userId] = {
     id: userId,
     email: email,
@@ -143,7 +137,7 @@ app.post("/register", (req, res) => {
   };
 
   // Set the user_id cookie
-  res.session("user_id", userId);
+  req.session.user_id = userId;
   res.redirect("/urls");
 });
 
@@ -152,35 +146,14 @@ app.post("/login", (req, res) => {
   const password = req.body.password;
   const user = getUserByEmail(email, users);
   
-  if user && bcrypt.compareSync(password, user.password) {
-    res.session("user_id", user.id);
+  if (user && bcrypt.compareSync(password, user.password)) {
+    req.session.user_id = user.id;
     res.redirect("/urls");
   } else {
     res.status(403).send("Email or password is incorrect");
   }
 }); 
 
-  // Find the user by email
-  let userId;
-  for (let id in users) {
-    if (users[id].email === email) {
-      userId = id;
-      break;
-    }
-  }
-
-  // If the user was not found, send a 403 error
-  if (!userId) {
-    res.status(403).send('Email not found');
-    return;
-  }
-
-  const hashedPassword = users[userId].password;
-
-  if (bcrypt.compareSync(password, hashedPassword)) {
-    res.session("user_id", userId);
-    res.redirect("/urls");
-  } else {
-    res.status(403).send("Incorrect password");
-  }
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
 });
