@@ -14,31 +14,20 @@ app.use(cookieSession({
 }));
 
 app.get("/", (req, res) => {
-  if (req.session.user_id) {
-    res.redirect("/urls");
-  } else {
-    res.redirect("/login");
-  }
-});
-
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
-
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
+  res.redirect("/urls");
 });
 
 app.get("/urls", (req, res) => {
   const userId = req.session.user_id;
-  if (!userId) {
-    res.send("Please login or register first.");
-    return;
+  let urls = {};
+  let user = null;
+  if (userId) {
+    urls = urlsForUser(userId);
+    user = users[userId];
   }
-  const urls = urlsForUser(userId);
   const templateVars = {
     urls,
-    user: users[userId]
+    user
   };
   res.render("urls_index", templateVars);
 });
@@ -55,17 +44,13 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:id", (req, res) => {
-  const userId = req.session.user_id;
   const shortURL = req.params.id;
-  if (!userId) {
-    res.send("Please login first.");
-    return;
+  const url = urlDatabase[shortURL];
+  if (url) {
+    res.render("urls_show", { shortURL, longURL: url.longURL });
+  } else {
+    res.status(404).send("URL not found");
   }
-  if (urlDatabase[shortURL].userID !== userId) {
-    res.send("This URL does not belong to you.");
-    return;
-  }
-  res.render("urls_show", { shortURL, longURL: urlDatabase[shortURL].longURL });
 });
 
 app.get("/login", (req, res) => {
@@ -80,6 +65,11 @@ app.get("/register", (req, res) => {
     user: users[req.session.user_id]
   };
   res.render("register", templateVars);
+});
+
+app.post("/logout", (req, res) => {
+  req.session = null;
+  res.redirect("/urls");
 });
 
 app.post("/urls/:id", (req, res) => {
@@ -123,10 +113,16 @@ app.post("/urls", (req, res) => {
   res.redirect("/urls");
 });
 
+app.post("/logout", (req, res) => {
+  req.session = null;
+  res.redirect("/urls");
+});
+
 app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password; 
   const hashedPassword = bcrypt.hashSync(password, 10); 
+
 
   // Check if email is already in use
   for (let userId in users) {
