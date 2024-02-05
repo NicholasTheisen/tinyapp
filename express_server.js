@@ -36,9 +36,12 @@ app.get("/urls", (req, res) => {
   // Get the URLs for the logged-in user
   let userUrls = getUrlsForUser(userId);
 
-  // Convert userUrls to an array if it's not already
   if (!Array.isArray(userUrls)) {
-    userUrls = Object.values(userUrls);
+    userUrls = Object.entries(userUrls).map(([shortURL, url]) => ({
+      shortURL,
+      longURL: url.longURL,
+      userID: url.userID
+    }));
   }
 
   // Get the user object
@@ -74,6 +77,8 @@ app.get("/urls/:id", (req, res) => {
     }
   }
 });
+
+
 
 app.get("/login", (req, res) => {
   const templateVars = {
@@ -137,13 +142,9 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
-  req.session.destroy((err) => {
-    if(err) {
-      return console.log(err);
-    }
+  req.session = null;
     res.redirect("/urls");
   });
-});
 
 app.post("/register", (req, res) => {
   const email = req.body.email;
