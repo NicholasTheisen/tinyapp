@@ -20,31 +20,34 @@
     <%- include('partials/_header') %>
     <main style="margin: 1em;">
       <h3>My URLs</h3>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Short URL</th>
-            <th>Long URL</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% for(let shortURL in urls) { %>
-            <tr>
-              <td><%= shortURL %></td>
-              <td><%= urls[shortURL].longURL %></td>
-              <td>
-                <form method="POST" action="/urls/<%= shortURL %>/delete">
-                  <button type="submit">Delete</button>
-                </form>
-              </td>
-              <td>
-                <a href="/urls/<%= shortURL %>">Edit</a>
-              </td>
-            </tr>
-          <% } %>
-        </tbody>
-      </table>
+<table class="table">
+  <thead>
+    <tr>
+      <th scope="col">Short URL</th>
+      <th scope="col">Long URL</th>
+      <th scope="col">Delete</th>
+      <th scope="col">Edit</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% urls.forEach(url => { %>
+      <tr>
+        <td><%= url.shortURL %></td>
+        <td><%= url.longURL %></td>
+        <td>
+          <form method="POST" action="/urls/<%= url.shortURL %>/delete">
+            <button type="submit">Delete</button>
+          </form>
+        </td>
+        <td>
+          <form method="GET" action="/urls/<%= url.shortURL %>/edit">
+            <button type="submit">Edit</button>
+          </form>
+        </td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
     </main>
     <!-- Bootstrap JS -->
     <script

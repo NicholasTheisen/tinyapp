@@ -34,7 +34,12 @@ app.get("/urls", (req, res) => {
   }
 
   // Get the URLs for the logged-in user
-  const userUrls = getUrlsForUser(userId);
+  let userUrls = getUrlsForUser(userId);
+
+  // Convert userUrls to an array if it's not already
+  if (!Array.isArray(userUrls)) {
+    userUrls = Object.values(userUrls);
+  }
 
   // Get the user object
   const user = users[userId];
