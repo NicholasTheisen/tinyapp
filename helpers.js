@@ -1,25 +1,49 @@
-const getUserByEmail = function(email, database) {
-  for (let user in database) {
-    if (database[user].email === email) {
-      return database[user];
+const { urlDatabase } = require('./database');
+const { users } = require('./database');
+
+
+const getUserByEmail = (email) => {
+  for (let userId in users) {
+    if (users[userId].email === email) {
+      return users[userId];
     }
   }
+  return null;
 };
 
-const { urlDatabase } = require('./database');
+const generateRandomString = () => {
+  return Math.random().toString(36).substring(2, 8);
+};
 
-function urlsForUser(id) {
+const urlsForUser = (id) => {
   let urls = {};
-  for (let url in urlDatabase) {
-    if (urlDatabase[url].userID === id) {
-      urls[url] = urlDatabase[url];
+  for (let shortURL in urlDatabase) {
+    if (urlDatabase[shortURL].userID === id) {
+      urls[shortURL] = urlDatabase[shortURL];
     }
   }
   return urls;
-}
+};
 
-function generateRandomString(length) {
-  return Math.random().toString(36).substring(2, 2 + length);
-}
+const getUrlsForUser = (id) => {
+  let urlsForUser = {};
+  for(let url in urlDatabase) {
+    if(urlDatabase[url].userID === id) {
+      urlsForUser[url] = urlDatabase[url];
+    }
+  }
+  return urlsForUser;
+};
 
-module.exports = { urlsForUser, getUserByEmail, generateRandomString };
+const checkUserAccess = (userId, shortURL, urlDatabase) => {
+  if (!userId) {
+    return { status: 403, message: "Please log in." };
+  } else if (!urlDatabase || !urlDatabase[shortURL]) {
+    return { status: 404, message: "URL not found." };
+  } else if (urlDatabase[shortURL].userID !== userId) {
+    return { status: 403, message: "Access denied." };
+  }
+  return null;
+};
+
+module.exports = { getUserByEmail, generateRandomString, urlsForUser, checkUserAccess, getUrlsForUser };
