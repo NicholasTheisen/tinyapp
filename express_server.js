@@ -107,7 +107,7 @@ app.get("/u/:id", (req, res) => {
 app.post("/urls/:id", (req, res) => {
   const userId = req.session.user_id;
   const shortURL = req.params.id;
-  const accessError = checkUserAccess(userId, shortURL);
+  const accessError = checkUserAccess(userId, shortURL, urlDatabase);
   if (accessError) {
     res.status(accessError.status).send(accessError.message);
   } else {
